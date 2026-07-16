@@ -1,0 +1,8 @@
+{
+  "name": "spotrent-kiosk",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
