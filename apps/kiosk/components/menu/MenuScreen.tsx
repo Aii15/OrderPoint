@@ -4,7 +4,9 @@ import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Navbar } from '@/components/layout/Navbar';
 import { ProductDetail } from '@/components/menu/ProductDetail';
+import { Toast } from '@/components/ui/Toast';
 import { Category, MenuItem, getFeaturedItemByCategory, getItemsByCategory } from '@/lib/menu-data';
+import { useCartStore } from '@/hooks/useCartStore';
 
 interface MenuScreenProps {
   initialCategory: Category;
@@ -33,6 +35,7 @@ export function MenuScreen({ initialCategory, initialItem }: MenuScreenProps) {
   const [category, setCategory] = useState<Category>(initialCategory);
   const [item, setItem] = useState<MenuItem>(initialItem);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const handleNavigate = (nextCategory: Category) => {
     if (nextCategory === category || isTransitioning) return;
@@ -41,9 +44,12 @@ export function MenuScreen({ initialCategory, initialItem }: MenuScreenProps) {
     setItem(getFeaturedItemByCategory(nextCategory));
   };
 
+  const addItem = useCartStore((state) => state.addItem);
+
   const handleOrder = () => {
-    // TODO: wire to real cart flow (Zustand cart store + router.push('/cart')) once apps/api exists.
-    window.alert(`Ditambahkan ke keranjang: ${item.name} - IDR ${item.price.toLocaleString('id-ID')}`);
+    addItem(item);
+    setToastMessage(`${item.name} ditambahkan ke keranjang`);
+    window.setTimeout(() => setToastMessage(null), 2000);
   };
 
   const itemsInCategory = getItemsByCategory(category);
@@ -65,6 +71,7 @@ export function MenuScreen({ initialCategory, initialItem }: MenuScreenProps) {
 
   return (
     <main className="min-h-screen bg-cream">
+      <Toast message={toastMessage} />
       <Navbar activeCategory={category} onNavigate={handleNavigate} disabled={isTransitioning} />
 
       <AnimatePresence mode="wait" onExitComplete={() => setIsTransitioning(false)}>
@@ -80,7 +87,7 @@ export function MenuScreen({ initialCategory, initialItem }: MenuScreenProps) {
             onPrev={handlePrev}
             onNext={handleNext}
             onOrder={handleOrder}
-            imageSize={420}
+            imageSize={340}
           />
         </motion.div>
       </AnimatePresence>
