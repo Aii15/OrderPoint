@@ -1,3 +1,5 @@
-export default function Page() {
-  return null;
+import { CartScreen } from '@/components/cart/CartScreen';
+
+export default function CartPage() {
+  return <CartScreen />;
 }

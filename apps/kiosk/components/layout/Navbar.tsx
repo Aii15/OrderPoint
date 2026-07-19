@@ -1,7 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Category, CATEGORIES } from '@/lib/menu-data';
+import { useCartStore, getCartItemCount } from '@/hooks/useCartStore';
 
 interface NavbarProps {
   activeCategory: Category;
@@ -10,10 +12,12 @@ interface NavbarProps {
 }
 
 export function Navbar({ activeCategory, onNavigate, disabled }: NavbarProps) {
+  const cartCount = useCartStore((state) => getCartItemCount(state.lines));
+
   return (
     <header className="flex items-center justify-between px-16 py-8">
       <div className="flex items-center gap-2 font-serif text-2xl text-ink">
-        <span aria-hidden>☕</span>
+        <img src="/images/icons/logo.png" alt="" aria-hidden className="h-7 w-7" />
         <span>OrderPoint</span>
       </div>
 
@@ -41,13 +45,18 @@ export function Navbar({ activeCategory, onNavigate, disabled }: NavbarProps) {
         })}
       </nav>
 
-      <button
-        type="button"
-        className="flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[15px] font-medium text-ink shadow-[8px_8px_18px_rgba(122,74,38,0.28),-8px_-8px_18px_rgba(255,255,255,0.95)] transition active:scale-[0.97] active:shadow-[inset_4px_4px_8px_rgba(122,74,38,0.35),inset_-4px_-4px_8px_rgba(255,255,255,0.7)]"
+      <Link
+        href="/cart"
+        className="relative flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[15px] font-medium text-ink shadow-[8px_8px_18px_rgba(122,74,38,0.28),-8px_-8px_18px_rgba(255,255,255,0.95)] transition active:scale-[0.97]"
       >
         <img src="/images/icons/cart.png" alt="" aria-hidden className="h-5 w-5" />
         Cart
-      </button>
+        {cartCount > 0 && (
+          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-latte px-1 text-xs font-bold text-cream">
+            {cartCount}
+          </span>
+        )}
+      </Link>
     </header>
   );
 }
