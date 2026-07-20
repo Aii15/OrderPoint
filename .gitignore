@@ -17,6 +17,15 @@ dist/
 .env.test.local
 .env.production.local
 
+# --- Database (SQLite leftover / local dev, project pakai Postgres) ---
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# --- Prisma generated client (kalau custom output path) ---
+prisma/generated/
+
 # --- Logs ---
 npm-debug.log*
 yarn-debug.log*
@@ -45,6 +54,9 @@ desktop.ini
 
 # --- Turborepo cache (kalau nanti pakai Turborepo) ---
 .turbo
+
+# --- Docker (kalau nanti pakai Docker lokal untuk demo) ---
+docker/**/data/
 
 # --- Misc ---
 *.pem
