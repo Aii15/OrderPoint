@@ -35,14 +35,18 @@ export function CheckoutScreen() {
   const clearCart = useCartStore((state) => state.clearCart);
   const setLastOrder = useCartStore((state) => state.setLastOrder);
 
-  // Dikunci sekali di awal supaya nilainya tidak berubah setelah cart/nama dikosongkan pasca-sukses
   const [initialCartEmpty] = useState(() => lines.length === 0);
   const [initialCustomerName] = useState(() => customerName);
-  const [checkoutTotal] = useState(() => {
-    const subtotal = getCartSubtotal(lines);
-    const tax = Math.round(subtotal * TAX_RATE);
-    return subtotal + tax;
-  });
+  const [checkoutItems] = useState(() =>
+    lines.map((line) => ({
+      name: line.item.name,
+      quantity: line.quantity,
+      price: line.item.price,
+    })),
+  );
+  const [checkoutSubtotal] = useState(() => getCartSubtotal(lines));
+  const [checkoutTax] = useState(() => Math.round(getCartSubtotal(lines) * TAX_RATE));
+  const [checkoutTotal] = useState(() => checkoutSubtotal + checkoutTax);
 
   const [status, setStatus] = useState<PaymentStatus>('creating');
   const [charge, setCharge] = useState<ChargeResult | null>(null);
@@ -63,7 +67,13 @@ export function CheckoutScreen() {
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ total: checkoutTotal, customerName: initialCustomerName }),
+        body: JSON.stringify({
+          customerName: initialCustomerName,
+          items: checkoutItems,
+          subtotal: checkoutSubtotal,
+          tax: checkoutTax,
+          total: checkoutTotal,
+        }),
       });
 
       const data = await response.json();

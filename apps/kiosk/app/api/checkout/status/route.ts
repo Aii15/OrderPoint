@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMidtransAuthHeader, MIDTRANS_BASE_URL } from '@/lib/midtrans';
+
+const API_BASE_URL = process.env.API_BASE_URL ?? 'http://localhost:3001';
 
 export async function GET(request: NextRequest) {
   const orderId = request.nextUrl.searchParams.get('orderId');
@@ -9,29 +10,21 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const midtransResponse = await fetch(`${MIDTRANS_BASE_URL}/${orderId}/status`, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        Authorization: getMidtransAuthHeader(),
-      },
-    });
+    const response = await fetch(`${API_BASE_URL}/api/midtrans/status/${orderId}`);
+    const data = await response.json();
 
-    const data = await midtransResponse.json();
-
-    if (!midtransResponse.ok) {
+    if (!response.ok) {
       return NextResponse.json(
-        { error: data.status_message ?? 'Gagal mengecek status transaksi' },
-        { status: midtransResponse.status },
+        { error: data.message ?? 'Gagal mengecek status transaksi' },
+        { status: response.status },
       );
     }
 
-    return NextResponse.json({
-      transactionStatus: data.transaction_status,
-      fraudStatus: data.fraud_status ?? null,
-    });
-  } catch (error) {
-    console.error('Midtrans status check error:', error);
-    return NextResponse.json({ error: 'Terjadi kesalahan pada server pembayaran' }, { status: 500 });
+    return NextResponse.json(data);
+  } catch {
+    return NextResponse.json(
+      { error: 'Tidak dapat terhubung ke server' },
+      { status: 502 },
+    );
   }
 }

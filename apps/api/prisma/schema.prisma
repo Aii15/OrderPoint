@@ -1,0 +1,43 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  EXPIRED
+}
+
+enum OrderStatus {
+  NEW
+  IN_PROGRESS
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+model Order {
+  id              String        @id @default(cuid())
+  queueNumber     String
+  customerName    String
+  items           String
+  subtotal        Int
+  tax             Int
+  total           Int
+  midtransOrderId String        @unique
+  paymentStatus   PaymentStatus @default(PENDING)
+  orderStatus     OrderStatus   @default(NEW)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model QueueCounter {
+  id      String @id @default("singleton")
+  dateKey String
+  counter Int    @default(0)
+}
