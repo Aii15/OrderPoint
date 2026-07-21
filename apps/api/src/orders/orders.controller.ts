@@ -11,6 +11,16 @@ export class OrdersController {
     return this.ordersService.listActiveOrders();
   }
 
+  @Get('failed')
+  listFailed() {
+    return this.ordersService.listFailedOrders();
+  }
+
+  @Get('completed-today')
+  listCompletedToday() {
+    return this.ordersService.listCompletedToday();
+  }
+
   @Get(':midtransOrderId')
   findOne(@Param('midtransOrderId') midtransOrderId: string) {
     return this.ordersService.findByMidtransOrderId(midtransOrderId);
