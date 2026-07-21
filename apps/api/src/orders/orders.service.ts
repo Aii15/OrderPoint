@@ -12,8 +12,6 @@ export class OrdersService {
     return `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
   }
 
-  // Nomor antrian di-generate atomically di dalam transaction supaya aman
-  // dari race condition kalau ada 2 request charge masuk bersamaan.
   async getNextQueueNumber(): Promise<string> {
     const todayKey = this.getDateKey();
 
@@ -94,6 +92,35 @@ export class OrdersService {
         orderStatus: { in: [OrderStatus.NEW, OrderStatus.IN_PROGRESS, OrderStatus.READY] },
       },
       orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  // Pesanan yang gagal/kedaluwarsa bayar — tidak masuk listActiveOrders
+  // karena paymentStatus-nya bukan PAID, tapi tetap perlu terlihat kasir
+  // untuk rekonsiliasi (misal pelanggan komplain "saya sudah bayar").
+  async listFailedOrders() {
+    return this.prisma.order.findMany({
+      where: {
+        paymentStatus: { in: [PaymentStatus.EXPIRED, PaymentStatus.PENDING] },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+  }
+
+  // Riwayat pesanan yang sudah selesai HARI INI — supaya kasir bisa
+  // cek ulang pesanan yang sudah hilang dari live queue.
+  async listCompletedToday() {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    return this.prisma.order.findMany({
+      where: {
+        orderStatus: { in: [OrderStatus.COMPLETED, OrderStatus.CANCELLED] },
+        createdAt: { gte: startOfDay },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
     });
   }
 }
