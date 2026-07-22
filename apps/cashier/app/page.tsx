@@ -68,9 +68,13 @@ export default function CashierPage() {
   const [toast, setToast] = useState<{ message: string; variant: 'success' | 'error' } | null>(
     null,
   );
+  const [readyAlertIds, setReadyAlertIds] = useState<Set<string>>(new Set());
   const [, forceTick] = useState(0);
 
   const knownIdsRef = useRef<Set<string>>(new Set());
+  // Menyimpan status terakhir tiap order yang diketahui, untuk mendeteksi
+  // transisi status (misal IN_PROGRESS -> READY) walau ID-nya sudah dikenal.
+  const lastStatusRef = useRef<Map<string, OrderStatus>>(new Map());
   const isFirstLoadRef = useRef(true);
 
   const loadOrders = async (mode: ViewMode) => {
@@ -87,10 +91,37 @@ export default function CashierPage() {
       if (mode === 'active') {
         if (!isFirstLoadRef.current) {
           const newOnes = data.filter((o) => !knownIdsRef.current.has(o.id));
-          if (newOnes.length > 0) playNotifySound();
+
+          const justBecameReady = data.filter(
+            (o) =>
+              o.orderStatus === 'READY' && lastStatusRef.current.get(o.id) !== 'READY',
+          );
+
+          if (newOnes.length > 0) {
+            playNotifySound();
+          }
+
+          if (justBecameReady.length > 0) {
+            playNotifySound();
+            const names = justBecameReady.map((o) => o.queueNumber).join(', ');
+            setToast({
+              message:
+                justBecameReady.length === 1
+                  ? `Pesanan ${names} siap diambil!`
+                  : `Pesanan ${names} siap diambil!`,
+              variant: 'success',
+            });
+            setReadyAlertIds((prev) => {
+              const next = new Set(prev);
+              justBecameReady.forEach((o) => next.add(o.id));
+              return next;
+            });
+          }
         }
+
         isFirstLoadRef.current = false;
         knownIdsRef.current = new Set(data.map((o) => o.id));
+        lastStatusRef.current = new Map(data.map((o) => [o.id, o.orderStatus]));
       }
 
       setOrders(data);
@@ -112,11 +143,20 @@ export default function CashierPage() {
     return () => clearInterval(tickInterval);
   }, []);
 
+  const dismissReadyAlert = (id: string) => {
+    setReadyAlertIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
+
   const handleAdvanceStatus = async (order: Order) => {
     const next = NEXT_STATUS[order.orderStatus];
     if (!next) return;
     try {
       await updateOrderStatus(order.id, next);
+      dismissReadyAlert(order.id);
       await loadOrders(viewMode);
       setSelectedOrder(null);
       setToast({ message: `${order.queueNumber} ditandai ${STATUS_LABEL[next]}`, variant: 'success' });
@@ -129,6 +169,7 @@ export default function CashierPage() {
     if (!confirmCancelOrder) return;
     try {
       await updateOrderStatus(confirmCancelOrder.id, 'CANCELLED');
+      dismissReadyAlert(confirmCancelOrder.id);
       await loadOrders(viewMode);
       setSelectedOrder(null);
       setToast({ message: `Pesanan ${confirmCancelOrder.queueNumber} dibatalkan`, variant: 'success' });
@@ -156,6 +197,8 @@ export default function CashierPage() {
     { key: 'history', label: 'Riwayat Hari Ini' },
   ];
 
+  const readyCount = orders.filter((o) => o.orderStatus === 'READY').length;
+
   return (
     <main className="min-h-screen bg-cream px-6 py-10 md:px-16">
       <header className="mx-auto mb-8 flex max-w-6xl flex-wrap items-center justify-between gap-4">
@@ -165,18 +208,32 @@ export default function CashierPage() {
         </div>
         <h1 className="font-serif text-4xl text-ink">Monitor Kasir</h1>
 
-        <span
-          className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold ${SOFT_SHADOW} ${
-            connectionError ? 'bg-red-50 text-red-600' : 'bg-white text-ink'
-          }`}
-        >
+        <div className="flex items-center gap-3">
+          {readyCount > 0 && (
+            <button
+              onClick={() => {
+                setViewMode('active');
+                setActiveTab('READY');
+              }}
+              className={`flex animate-pulse items-center gap-2 rounded-full bg-green-100 px-5 py-2 text-sm font-semibold text-green-700 ${SOFT_SHADOW}`}
+            >
+              <span className="h-2 w-2 rounded-full bg-green-500" />
+              {readyCount} siap diambil
+            </button>
+          )}
           <span
-            className={`h-2 w-2 rounded-full ${
-              connectionError ? 'animate-pulse bg-red-500' : 'bg-green-500'
+            className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold ${SOFT_SHADOW} ${
+              connectionError ? 'bg-red-50 text-red-600' : 'bg-white text-ink'
             }`}
-          />
-          {connectionError ? 'Terputus dari server' : `${orders.length} pesanan`}
-        </span>
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${
+                connectionError ? 'animate-pulse bg-red-500' : 'bg-green-500'
+              }`}
+            />
+            {connectionError ? 'Terputus dari server' : `${orders.length} pesanan`}
+          </span>
+        </div>
       </header>
 
       <div className="mx-auto mb-6 flex max-w-6xl flex-wrap gap-3">
@@ -243,14 +300,27 @@ export default function CashierPage() {
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredOrders.map((order) => {
               const overdue = viewMode === 'active' && isWaitingTooLong(order.createdAt);
+              const justReady = readyAlertIds.has(order.id);
               return (
                 <button
                   key={order.id}
-                  onClick={() => setSelectedOrder(order)}
-                  className={`rounded-[3rem] border bg-white/50 p-8 text-left shadow-sm transition hover:shadow-md active:scale-[0.98] ${
-                    overdue ? 'border-amber-400/60 ring-2 ring-amber-300/40' : 'border-latte/10'
+                  onClick={() => {
+                    setSelectedOrder(order);
+                    dismissReadyAlert(order.id);
+                  }}
+                  className={`relative rounded-[3rem] border bg-white/50 p-8 text-left shadow-sm transition hover:shadow-md active:scale-[0.98] ${
+                    justReady
+                      ? 'border-green-400/60 ring-2 ring-green-300/50'
+                      : overdue
+                      ? 'border-amber-400/60 ring-2 ring-amber-300/40'
+                      : 'border-latte/10'
                   }`}
                 >
+                  {justReady && (
+                    <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-xs font-bold text-white">
+                      !
+                    </span>
+                  )}
                   <div className="mb-3 flex items-center justify-between">
                     <span className="font-serif text-4xl text-ink">{order.queueNumber}</span>
                     <span
