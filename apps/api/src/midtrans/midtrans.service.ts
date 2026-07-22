@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { createHash } from 'crypto';
 
 @Injectable()
 export class MidtransService {
@@ -56,5 +57,19 @@ export class MidtransService {
     }
 
     return data;
+  }
+
+  // Memverifikasi bahwa notifikasi webhook benar-benar datang dari Midtrans,
+  // bukan dari pihak lain yang berpura-pura. Formula resmi dari dokumentasi
+  // Midtrans: SHA512(order_id + status_code + gross_amount + ServerKey)
+  verifySignature(params: {
+    orderId: string;
+    statusCode: string;
+    grossAmount: string;
+    signatureKey: string;
+  }): boolean {
+    const raw = `${params.orderId}${params.statusCode}${params.grossAmount}${this.serverKey}`;
+    const expected = createHash('sha512').update(raw).digest('hex');
+    return expected === params.signatureKey;
   }
 }
