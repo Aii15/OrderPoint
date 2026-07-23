@@ -1,0 +1,415 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { CATEGORIES, Category, MenuItem, MenuItemInput } from '@/lib/api';
+
+interface MenuItemFormProps {
+  title: string;
+  initial?: MenuItem; // kalau ada = mode edit, kalau tidak = mode tambah
+  onSubmit: (input: MenuItemInput) => Promise<void>;
+  onCancel: () => void;
+}
+
+type TabKey = 'dasar' | 'penyajian' | 'atribut';
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'dasar', label: 'Info Dasar' },
+  { key: 'penyajian', label: 'Detail Penyajian' },
+  { key: 'atribut', label: 'Atribut & Meter' },
+];
+
+// Preview gambar produk. Gambar TIDAK di-upload lewat form ini — file-nya
+// tetap manual ditaruh di apps/kiosk/public/images/{id}.png. Komponen ini
+// cuma menunjukkan apakah file itu sudah ada di apps/kiosk (dilihat lewat
+// NEXT_PUBLIC_KIOSK_BASE_URL), supaya admin tahu perlu upload atau tidak.
+function ImagePreview({ id }: { id: string }) {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [id]);
+
+  const kioskBaseUrl = process.env.NEXT_PUBLIC_KIOSK_BASE_URL ?? 'http://localhost:3000';
+  const src = `${kioskBaseUrl}/images/${id}.png`;
+
+  if (!id || failed) {
+    return (
+      <div className="flex h-40 w-40 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-latte/20 bg-cream/40 p-3 text-center">
+        <span className="text-xs font-medium text-ink/50">
+          {!id ? 'Isi Id dulu' : 'Gambar belum ada'}
+        </span>
+        {id && (
+          <span className="text-[10px] leading-tight text-ink/30">
+            taruh file di public/images/{id}.png
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt="Preview menu"
+      onError={() => setFailed(true)}
+      className="h-40 w-40 shrink-0 rounded-2xl object-cover"
+    />
+  );
+}
+
+function TextListEditor({
+  label,
+  values,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  values: string[];
+  onChange: (next: string[]) => void;
+  placeholder: string;
+}) {
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <label className="text-sm font-bold text-ink">{label}</label>
+        <button
+          type="button"
+          onClick={() => onChange([...values, ''])}
+          className="text-xs font-semibold text-latte"
+        >
+          + Tambah
+        </button>
+      </div>
+      <div className="space-y-2">
+        {values.map((value, index) => (
+          <div key={index} className="flex gap-2">
+            <input
+              value={value}
+              placeholder={placeholder}
+              onChange={(e) => {
+                const next = [...values];
+                next[index] = e.target.value;
+                onChange(next);
+              }}
+              className="flex-1 rounded-xl bg-cream px-4 py-2 text-sm text-ink outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => onChange(values.filter((_, i) => i !== index))}
+              className="rounded-xl px-3 text-sm font-semibold text-red-500"
+            >
+              Hapus
+            </button>
+          </div>
+        ))}
+        {values.length === 0 && <p className="text-xs text-ink/40">Belum ada item.</p>}
+      </div>
+    </div>
+  );
+}
+
+function PairListEditor<T extends { label: string; value: string | number }>({
+  title,
+  values,
+  onChange,
+  valueType,
+}: {
+  title: string;
+  values: T[];
+  onChange: (next: T[]) => void;
+  valueType: 'text' | 'number';
+}) {
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <label className="text-sm font-bold text-ink">{title}</label>
+        <button
+          type="button"
+          onClick={() =>
+            onChange([...values, { label: '', value: valueType === 'number' ? 1 : '' } as T])
+          }
+          className="text-xs font-semibold text-latte"
+        >
+          + Tambah
+        </button>
+      </div>
+      <div className="space-y-2">
+        {values.map((pair, index) => (
+          <div key={index} className="flex gap-2">
+            <input
+              value={pair.label}
+              placeholder="Label"
+              onChange={(e) => {
+                const next = [...values];
+                next[index] = { ...next[index], label: e.target.value };
+                onChange(next);
+              }}
+              className="flex-1 rounded-xl bg-cream px-4 py-2 text-sm text-ink outline-none"
+            />
+            {valueType === 'number' ? (
+              <input
+                type="number"
+                min={1}
+                max={5}
+                value={pair.value as number}
+                onChange={(e) => {
+                  const next = [...values];
+                  next[index] = { ...next[index], value: Number(e.target.value) };
+                  onChange(next);
+                }}
+                className="w-20 rounded-xl bg-cream px-3 py-2 text-sm text-ink outline-none"
+              />
+            ) : (
+              <input
+                value={pair.value as string}
+                placeholder="Value"
+                onChange={(e) => {
+                  const next = [...values];
+                  next[index] = { ...next[index], value: e.target.value };
+                  onChange(next);
+                }}
+                className="flex-1 rounded-xl bg-cream px-4 py-2 text-sm text-ink outline-none"
+              />
+            )}
+            <button
+              type="button"
+              onClick={() => onChange(values.filter((_, i) => i !== index))}
+              className="rounded-xl px-3 text-sm font-semibold text-red-500"
+            >
+              Hapus
+            </button>
+          </div>
+        ))}
+        {values.length === 0 && <p className="text-xs text-ink/40">Belum ada item.</p>}
+      </div>
+    </div>
+  );
+}
+
+export function MenuItemForm({ title, initial, onSubmit, onCancel }: MenuItemFormProps) {
+  const isEdit = Boolean(initial);
+  const [activeTab, setActiveTab] = useState<TabKey>('dasar');
+  const [id, setId] = useState(initial?.id ?? '');
+  const [category, setCategory] = useState<Category>((initial?.category as Category) ?? CATEGORIES[0]);
+  const [name, setName] = useState(initial?.name ?? '');
+  const [description, setDescription] = useState(initial?.description ?? '');
+  const [composition, setComposition] = useState<string[]>(initial?.composition ?? []);
+  const [servingDetails, setServingDetails] = useState<string[]>(initial?.servingDetails ?? []);
+  const [attributes, setAttributes] = useState(initial?.attributes ?? []);
+  const [meters, setMeters] = useState(initial?.meters ?? []);
+  const [price, setPrice] = useState(initial?.price ?? 0);
+  const [availability, setAvailability] = useState(initial?.availability ?? 'Available all day');
+  const [imageAlt, setImageAlt] = useState(initial?.imageAlt ?? '');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const idChanged = isEdit && initial ? id !== initial.id : false;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id || !name) {
+      setFormError('Id dan nama wajib diisi.');
+      setActiveTab('dasar');
+      return;
+    }
+    setFormError(null);
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        id,
+        category,
+        name,
+        description,
+        composition,
+        servingDetails,
+        attributes,
+        meters,
+        price,
+        availability,
+        imageAlt,
+      });
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Gagal menyimpan menu item.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <main className="mx-auto max-w-4xl p-10">
+      <button
+        type="button"
+        onClick={onCancel}
+        className="mb-6 text-sm font-semibold text-latte"
+      >
+        &larr; Kembali ke Menu
+      </button>
+
+      <h1 className="mb-6 font-serif text-3xl text-ink">{title}</h1>
+
+      <form onSubmit={handleSubmit}>
+        <div className="mb-6 flex gap-2 rounded-full bg-cream/70 p-1">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                activeTab === tab.key ? 'bg-latte text-cream' : 'text-ink/50'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="rounded-[2rem] bg-white p-8 shadow-[8px_8px_18px_rgba(122,74,38,0.15),-8px_-8px_18px_rgba(255,255,255,0.9)]">
+          {activeTab === 'dasar' && (
+            <div className="space-y-4">
+              <div className="flex gap-6">
+                <ImagePreview id={id} />
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <label className="mb-1 block text-sm font-bold text-ink">
+                      Id (slug, dipakai untuk nama file gambar)
+                    </label>
+                    <input
+                      value={id}
+                      onChange={(e) => setId(e.target.value.trim().toLowerCase().replace(/\s+/g, '-'))}
+                      placeholder="mis. caramel-latte"
+                      className="w-full rounded-xl bg-cream px-4 py-2 text-sm text-ink outline-none"
+                    />
+                    {idChanged && (
+                      <p className="mt-1 text-xs font-medium text-amber-600">
+                        Id berubah dari &quot;{initial?.id}&quot; — jangan lupa rename juga file gambarnya
+                        secara manual di apps/kiosk/public/images/ dari {initial?.id}.png menjadi {id}.png.
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-bold text-ink">Kategori</label>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value as Category)}
+                      className="w-full rounded-xl bg-cream px-4 py-2 text-sm text-ink outline-none"
+                    >
+                      {CATEGORIES.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-bold text-ink">Nama</label>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full rounded-xl bg-cream px-4 py-2 text-sm text-ink outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-bold text-ink">Deskripsi</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                  className="w-full rounded-xl bg-cream px-4 py-2 text-sm text-ink outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1 block text-sm font-bold text-ink">Harga (IDR)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={price}
+                    onChange={(e) => setPrice(Number(e.target.value))}
+                    className="w-full rounded-xl bg-cream px-4 py-2 text-sm text-ink outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-bold text-ink">Ketersediaan</label>
+                  <input
+                    value={availability}
+                    onChange={(e) => setAvailability(e.target.value)}
+                    placeholder="mis. Available all day"
+                    className="w-full rounded-xl bg-cream px-4 py-2 text-sm text-ink outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-bold text-ink">Alt teks gambar</label>
+                <input
+                  value={imageAlt}
+                  onChange={(e) => setImageAlt(e.target.value)}
+                  className="w-full rounded-xl bg-cream px-4 py-2 text-sm text-ink outline-none"
+                />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'penyajian' && (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <TextListEditor
+                label="Composition"
+                values={composition}
+                onChange={setComposition}
+                placeholder="mis. Espresso"
+              />
+              <TextListEditor
+                label="Serving Details"
+                values={servingDetails}
+                onChange={setServingDetails}
+                placeholder="mis. Size: 240 ml"
+              />
+            </div>
+          )}
+
+          {activeTab === 'atribut' && (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <PairListEditor
+                title="Attributes"
+                values={attributes}
+                onChange={setAttributes}
+                valueType="text"
+              />
+              <PairListEditor
+                title="Meters (skala 1-5)"
+                values={meters}
+                onChange={setMeters}
+                valueType="number"
+              />
+            </div>
+          )}
+        </div>
+
+        {formError && <p className="mt-4 text-sm font-medium text-red-500">{formError}</p>}
+
+        <div className="mt-6 flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 rounded-full bg-cream px-6 py-3 text-[15px] font-semibold text-ink/70 transition active:scale-95 sm:flex-none sm:px-10"
+          >
+            Batal
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex-1 rounded-full bg-latte px-6 py-3 text-[15px] font-semibold text-cream transition active:scale-95 disabled:opacity-50 sm:flex-none sm:px-10"
+          >
+            {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+          </button>
+        </div>
+      </form>
+    </main>
+  );
+}

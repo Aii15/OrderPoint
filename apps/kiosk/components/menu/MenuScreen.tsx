@@ -1,20 +1,27 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Navbar } from '@/components/layout/Navbar';
 import { ProductDetail } from '@/components/menu/ProductDetail';
 import { Toast } from '@/components/ui/Toast';
-import { Category, MenuItem, getFeaturedItemByCategory, getItemsByCategory } from '@/lib/menu-data';
+import {
+  Category,
+  MenuItem,
+  getFeaturedItemByCategoryFrom,
+  getItemsByCategoryFrom,
+} from '@/lib/menu-data';
 import { useCartStore } from '@/hooks/useCartStore';
 
 interface MenuScreenProps {
   initialCategory: Category;
   initialItem: MenuItem;
+  // BARU — seluruh katalog menu (hasil fetch di server component page.tsx),
+  // diteruskan sebagai prop supaya navigasi kategori/item tetap sinkron
+  // tanpa perlu fetch ulang tiap kali user pindah item.
+  allItems: MenuItem[];
 }
 
-// "Sink" transition: the outgoing section drops down, shrinks, and fades out.
-// The incoming section then rises up from the same depth to settle into place.
 const sinkVariants = {
   initial: { opacity: 0, y: 56, scale: 0.94 },
   animate: {
@@ -31,7 +38,7 @@ const sinkVariants = {
   },
 };
 
-export function MenuScreen({ initialCategory, initialItem }: MenuScreenProps) {
+export function MenuScreen({ initialCategory, initialItem, allItems }: MenuScreenProps) {
   const [category, setCategory] = useState<Category>(initialCategory);
   const [item, setItem] = useState<MenuItem>(initialItem);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -39,9 +46,11 @@ export function MenuScreen({ initialCategory, initialItem }: MenuScreenProps) {
 
   const handleNavigate = (nextCategory: Category) => {
     if (nextCategory === category || isTransitioning) return;
+    const featured = getFeaturedItemByCategoryFrom(allItems, nextCategory);
+    if (!featured) return; // kategori belum punya item apa pun di database
     setIsTransitioning(true);
     setCategory(nextCategory);
-    setItem(getFeaturedItemByCategory(nextCategory));
+    setItem(featured);
   };
 
   const addItem = useCartStore((state) => state.addItem);
@@ -52,7 +61,7 @@ export function MenuScreen({ initialCategory, initialItem }: MenuScreenProps) {
     window.setTimeout(() => setToastMessage(null), 2000);
   };
 
-  const itemsInCategory = getItemsByCategory(category);
+  const itemsInCategory = getItemsByCategoryFrom(allItems, category);
   const currentIndex = itemsInCategory.findIndex((candidate) => candidate.id === item.id);
 
   const handlePrev = () => {

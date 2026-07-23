@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { OrderStatus } from '@prisma/client';
 import { OrdersService } from './orders.service';
 
@@ -19,6 +19,18 @@ export class OrdersController {
   @Get('completed-today')
   listCompletedToday() {
     return this.ordersService.listCompletedToday();
+  }
+
+  // BARU (apps/admin) — ?date=YYYY-MM-DD, default hari ini kalau tidak diisi
+  @Get('history')
+  listHistory(@Query('date') date?: string) {
+    return this.ordersService.listByDate(date);
+  }
+
+  // BARU (apps/admin) — detail satu order lewat id internal, dipakai /riwayat/[id]
+  @Get('detail/:id')
+  findById(@Param('id') id: string) {
+    return this.ordersService.findById(id);
   }
 
   @Get(':midtransOrderId')

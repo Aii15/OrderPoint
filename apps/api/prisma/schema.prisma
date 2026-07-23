@@ -41,3 +41,22 @@ model QueueCounter {
   dateKey String
   counter Int    @default(0)
 }
+
+model MenuItem {
+  id             String   @id
+  category       String
+  name           String
+  description    String
+  composition    String[]
+  attributes     Json
+  meters         Json
+  servingDetails String[]
+  price          Int
+  availability   String
+  imageAlt       String
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([category])
+}

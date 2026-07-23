@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { MenuScreen } from '@/components/menu/MenuScreen';
-import { Category, CATEGORIES, getItem } from '@/lib/menu-data';
+import { Category, CATEGORIES, fetchAllMenuItems, getItemFrom } from '@/lib/menu-data';
 
 interface PageProps {
   params: Promise<{ category: string; itemId: string }>;
@@ -14,11 +14,12 @@ export default async function MenuItemPage({ params }: PageProps) {
     notFound();
   }
 
-  const item = getItem(category, resolvedParams.itemId);
+  const allItems = await fetchAllMenuItems();
+  const item = getItemFrom(allItems, category, resolvedParams.itemId);
 
   if (!item) {
     notFound();
   }
 
-  return <MenuScreen initialCategory={category} initialItem={item} />;
+  return <MenuScreen initialCategory={category} initialItem={item} allItems={allItems} />;
 }
