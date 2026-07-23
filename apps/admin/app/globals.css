@@ -1,0 +1,21 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-cream: #fbe1bb;
+  --color-latte: #7a4a26;
+  --color-steel: #aec1d2;
+  --color-ink: #231c14;
+}
+
+html,
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.font-serif {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}

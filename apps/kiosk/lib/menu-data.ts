@@ -5,7 +5,7 @@ export interface MenuItem {
   description: string;
   composition: string[];
   attributes: { label: string; value: string }[];
-  meters: { label: string; value: number }[]; // value 1-5
+  meters: { label: string; value: number }[];
   servingDetails: string[];
   price: number;
   availability: string;
@@ -14,221 +14,65 @@ export interface MenuItem {
 
 export type Category = 'Coffee' | 'Pastries' | 'Beverages' | 'Side Dishes';
 
+// Tetap statis untuk sekarang — dipakai Navbar untuk urutan & label tab.
+// Kalau nanti admin bisa menambah kategori baru lewat apps/admin, daftar ini
+// perlu ikut diperbarui manual (di luar cakupan CRUD menu tahap ini).
 export const CATEGORIES: Category[] = ['Coffee', 'Pastries', 'Beverages', 'Side Dishes'];
 
-const MENU: Record<Category, MenuItem[]> = {
-  Coffee: [
-    {
-      id: 'cappuccino',
-      category: 'Coffee',
-      name: 'Cappuccino',
-      description:
-        'Cappuccino is a balanced combination of espresso, warm milk, and soft milk foam with a creamy taste and distinctive coffee aroma.',
-      composition: ['Espresso', 'Steamed Milk', 'Milk Foam'],
-      attributes: [
-        { label: 'Origin', value: 'Arabica Coffee Beans' },
-        { label: 'Roast Level', value: 'Medium Roast' },
-        { label: 'Texture', value: 'Creamy & Velvety' },
-        { label: 'Aroma', value: 'Rich Coffee Aroma' },
-        { label: 'Best Served', value: 'Hot' },
-      ],
-      meters: [
-        { label: 'Coffee Strength', value: 3 },
-        { label: 'Creaminess', value: 4 },
-        { label: 'Bitterness', value: 2 },
-      ],
-      servingDetails: ['Size: 240 ml', 'Milk Based', 'Contains Dairy'],
-      price: 32000,
-      availability: 'Available all day',
-      imageAlt: 'Cappuccino with heart-shaped latte art in a light blue cup',
-    },
-    {
-      id: 'espresso',
-      category: 'Coffee',
-      name: 'Espresso',
-      description:
-        'A concentrated shot of pure coffee, pulled fast and hot, with a thick crema and bold, intense flavor.',
-      composition: ['Espresso Shot'],
-      attributes: [
-        { label: 'Origin', value: 'Robusta Blend' },
-        { label: 'Roast Level', value: 'Dark Roast' },
-        { label: 'Texture', value: 'Bold & Syrupy' },
-        { label: 'Aroma', value: 'Deep, Earthy Aroma' },
-        { label: 'Best Served', value: 'Hot' },
-      ],
-      meters: [
-        { label: 'Coffee Strength', value: 5 },
-        { label: 'Creaminess', value: 1 },
-        { label: 'Bitterness', value: 4 },
-      ],
-      servingDetails: ['Size: 60 ml', 'Dairy Free', 'Contains Caffeine'],
-      price: 22000,
-      availability: 'Available all day',
-      imageAlt: 'Small cup of espresso with thick crema',
-    },
-  ],
-  Pastries: [
-    {
-      id: 'croissant',
-      category: 'Pastries',
-      name: 'Butter Croissant',
-      description:
-        'A flaky, golden pastry laminated with layers of butter for a light, crisp bite with a soft interior.',
-      composition: ['Flour', 'Butter', 'Yeast'],
-      attributes: [
-        { label: 'Origin', value: 'French Recipe' },
-        { label: 'Bake Level', value: 'Golden Brown' },
-        { label: 'Texture', value: 'Flaky & Buttery' },
-        { label: 'Aroma', value: 'Warm Buttery Aroma' },
-        { label: 'Best Served', value: 'Warm' },
-      ],
-      meters: [
-        { label: 'Sweetness', value: 2 },
-        { label: 'Flakiness', value: 5 },
-        { label: 'Richness', value: 4 },
-      ],
-      servingDetails: ['Size: 80 g', 'Contains Gluten', 'Contains Dairy'],
-      price: 28000,
-      availability: 'Available until 4 PM',
-      imageAlt: 'Golden butter croissant on a plate',
-    },
-    {
-      id: 'chocolate-muffin',
-      category: 'Pastries',
-      name: 'Chocolate Muffin',
-      description:
-        'A soft, moist muffin packed with rich chocolate chips, baked until the top is slightly crisp and the inside stays fudgy.',
-      composition: ['Flour', 'Cocoa', 'Chocolate Chips'],
-      attributes: [
-        { label: 'Origin', value: 'Belgian Cocoa' },
-        { label: 'Bake Level', value: 'Soft Bake' },
-        { label: 'Texture', value: 'Moist & Fudgy' },
-        { label: 'Aroma', value: 'Deep Chocolate Aroma' },
-        { label: 'Best Served', value: 'Room Temperature' },
-      ],
-      meters: [
-        { label: 'Sweetness', value: 4 },
-        { label: 'Flakiness', value: 1 },
-        { label: 'Richness', value: 5 },
-      ],
-      servingDetails: ['Size: 100 g', 'Contains Gluten', 'Contains Dairy'],
-      price: 25000,
-      availability: 'Available until 6 PM',
-      imageAlt: 'Chocolate muffin with visible chocolate chips',
-    },
-  ],
-  Beverages: [
-    {
-      id: 'iced-lemon-tea',
-      category: 'Beverages',
-      name: 'Iced Lemon Tea',
-      description:
-        'A refreshing blend of steeped black tea and fresh lemon, served chilled over ice for a crisp, citrusy finish.',
-      composition: ['Black Tea', 'Fresh Lemon', 'Sugar Syrup'],
-      attributes: [
-        { label: 'Origin', value: 'Ceylon Black Tea' },
-        { label: 'Serving Style', value: 'Iced' },
-        { label: 'Texture', value: 'Light & Crisp' },
-        { label: 'Aroma', value: 'Citrus Aroma' },
-        { label: 'Best Served', value: 'Cold' },
-      ],
-      meters: [
-        { label: 'Sweetness', value: 3 },
-        { label: 'Tartness', value: 4 },
-        { label: 'Strength', value: 2 },
-      ],
-      servingDetails: ['Size: 300 ml', 'Dairy Free', 'Contains Caffeine'],
-      price: 18000,
-      availability: 'Available all day',
-      imageAlt: 'Glass of iced lemon tea with lemon slices',
-    },
-    {
-      id: 'mango-smoothie',
-      category: 'Beverages',
-      name: 'Mango Smoothie',
-      description:
-        'A thick, chilled blend of ripe mango and yogurt, giving a naturally sweet and tropical refresher.',
-      composition: ['Ripe Mango', 'Yogurt', 'Ice'],
-      attributes: [
-        { label: 'Origin', value: 'Local Mango' },
-        { label: 'Serving Style', value: 'Blended' },
-        { label: 'Texture', value: 'Thick & Creamy' },
-        { label: 'Aroma', value: 'Fresh Tropical Aroma' },
-        { label: 'Best Served', value: 'Cold' },
-      ],
-      meters: [
-        { label: 'Sweetness', value: 4 },
-        { label: 'Tartness', value: 2 },
-        { label: 'Strength', value: 1 },
-      ],
-      servingDetails: ['Size: 350 ml', 'Contains Dairy', 'Caffeine Free'],
-      price: 24000,
-      availability: 'Available all day',
-      imageAlt: 'Glass of mango smoothie with a mango slice garnish',
-    },
-  ],
-  'Side Dishes': [
-    {
-      id: 'fries',
-      category: 'Side Dishes',
-      name: 'Crispy Fries',
-      description:
-        'Golden, crispy potato fries seasoned lightly with sea salt, served hot as the perfect companion to any drink.',
-      composition: ['Potato', 'Sea Salt', 'Vegetable Oil'],
-      attributes: [
-        { label: 'Origin', value: 'Russet Potato' },
-        { label: 'Cook Level', value: 'Golden Crisp' },
-        { label: 'Texture', value: 'Crispy Outside, Soft Inside' },
-        { label: 'Aroma', value: 'Savory Aroma' },
-        { label: 'Best Served', value: 'Hot' },
-      ],
-      meters: [
-        { label: 'Saltiness', value: 3 },
-        { label: 'Crispiness', value: 5 },
-        { label: 'Oiliness', value: 2 },
-      ],
-      servingDetails: ['Size: 150 g', 'Vegan', 'Contains Gluten Trace'],
-      price: 20000,
-      availability: 'Available all day',
-      imageAlt: 'Bowl of crispy golden fries',
-    },
-    {
-      id: 'onion-rings',
-      category: 'Side Dishes',
-      name: 'Onion Rings',
-      description:
-        'Thick-cut onion rings coated in a crispy seasoned batter, deep-fried until golden and served piping hot.',
-      composition: ['Onion', 'Batter', 'Vegetable Oil'],
-      attributes: [
-        { label: 'Origin', value: 'Sweet Yellow Onion' },
-        { label: 'Cook Level', value: 'Golden Crisp' },
-        { label: 'Texture', value: 'Crunchy Outside, Sweet Inside' },
-        { label: 'Aroma', value: 'Savory Fried Aroma' },
-        { label: 'Best Served', value: 'Hot' },
-      ],
-      meters: [
-        { label: 'Saltiness', value: 2 },
-        { label: 'Crispiness', value: 5 },
-        { label: 'Oiliness', value: 3 },
-      ],
-      servingDetails: ['Size: 130 g', 'Vegetarian', 'Contains Gluten'],
-      price: 22000,
-      availability: 'Available all day',
-      imageAlt: 'Basket of golden fried onion rings',
-    },
-  ],
-};
+const API_BASE_URL = process.env.API_BASE_URL ?? 'http://localhost:3001';
 
-export function getItemsByCategory(category: Category): MenuItem[] {
-  return MENU[category] ?? [];
+// Bentuk mentah yang dikembalikan apps/api (kolom attributes/meters adalah Json)
+interface ApiMenuItem {
+  id: string;
+  category: string;
+  name: string;
+  description: string;
+  composition: string[];
+  attributes: { label: string; value: string }[];
+  meters: { label: string; value: number }[];
+  servingDetails: string[];
+  price: number;
+  availability: string;
+  imageAlt: string;
 }
 
-export function getFeaturedItemByCategory(category: Category): MenuItem {
-  return MENU[category][0];
+function toMenuItem(raw: ApiMenuItem): MenuItem {
+  return { ...raw, category: raw.category as Category };
 }
 
-export function getItem(category: Category, itemId: string): MenuItem | undefined {
-  return MENU[category]?.find((item) => item.id === itemId);
+// Dipanggil dari Server Component (page.tsx) — mengambil SELURUH menu sekali
+// per request. revalidate 30s supaya perubahan dari apps/admin muncul cepat
+// tanpa perlu redeploy, tapi tetap dapat manfaat caching Next.js.
+export async function fetchAllMenuItems(): Promise<MenuItem[]> {
+  const response = await fetch(`${API_BASE_URL}/api/menu`, { next: { revalidate: 30 } });
+  if (!response.ok) {
+    throw new Error('Gagal mengambil data menu dari apps/api');
+  }
+  const raw: ApiMenuItem[] = await response.json();
+  return raw.map(toMenuItem);
+}
+
+// --- Helper MURNI, beroperasi di atas list yang sudah di-fetch. Aman dipakai
+// dari Client Component (MenuScreen.tsx) yang menerima `allItems` lewat props,
+// jadi tidak perlu fetch ulang atau jadi async saat pindah item/kategori. ---
+
+export function getItemsByCategoryFrom(items: MenuItem[], category: Category): MenuItem[] {
+  return items.filter((item) => item.category === category);
+}
+
+export function getFeaturedItemByCategoryFrom(
+  items: MenuItem[],
+  category: Category,
+): MenuItem | undefined {
+  return getItemsByCategoryFrom(items, category)[0];
+}
+
+export function getItemFrom(
+  items: MenuItem[],
+  category: Category,
+  itemId: string,
+): MenuItem | undefined {
+  return items.find((item) => item.category === category && item.id === itemId);
 }
 
 export function formatIDR(amount: number): string {

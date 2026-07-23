@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -84,7 +84,7 @@ export class OrdersService {
     });
   }
 
-  // Dipakai monitor kasir: pesanan yang sudah dibayar dan belum selesai
+  // Dipakai monitor kasir & dapur: pesanan yang sudah dibayar dan belum selesai
   async listActiveOrders() {
     return this.prisma.order.findMany({
       where: {
@@ -95,9 +95,7 @@ export class OrdersService {
     });
   }
 
-  // Pesanan yang gagal/kedaluwarsa bayar — tidak masuk listActiveOrders
-  // karena paymentStatus-nya bukan PAID, tapi tetap perlu terlihat kasir
-  // untuk rekonsiliasi (misal pelanggan komplain "saya sudah bayar").
+  // Pesanan yang gagal/kedaluwarsa bayar, untuk rekonsiliasi kasir
   async listFailedOrders() {
     return this.prisma.order.findMany({
       where: {
@@ -108,8 +106,7 @@ export class OrdersService {
     });
   }
 
-  // Riwayat pesanan yang sudah selesai HARI INI — supaya kasir bisa
-  // cek ulang pesanan yang sudah hilang dari live queue.
+  // Riwayat pesanan selesai HARI INI (dipakai tab "Riwayat" di apps/cashier)
   async listCompletedToday() {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
@@ -122,5 +119,36 @@ export class OrdersService {
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
+  }
+
+  // BARU (apps/admin) — riwayat SEMUA pesanan (semua status) pada satu tanggal
+  // tertentu, dipilih lewat kalender. Beda dari listCompletedToday: ini lintas
+  // tanggal (bukan cuma hari ini) dan tidak difilter status (admin perlu lihat
+  // yang gagal bayar / dibatalkan juga sebagai bagian dari riwayat).
+  async listByDate(dateKey?: string) {
+    const target = dateKey ? new Date(`${dateKey}T00:00:00`) : new Date();
+
+    if (Number.isNaN(target.getTime())) {
+      throw new BadRequestException('Format tanggal tidak valid, gunakan YYYY-MM-DD');
+    }
+
+    const startOfDay = new Date(target);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(target);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return this.prisma.order.findMany({
+      where: { createdAt: { gte: startOfDay, lte: endOfDay } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // BARU (apps/admin) — detail satu order lewat id internal (cuid), dipakai
+  // halaman /riwayat/[id]. Beda dari findByMidtransOrderId yang lookup lewat
+  // midtransOrderId (dipakai kiosk untuk polling status pembayaran).
+  async findById(id: string) {
+    const order = await this.prisma.order.findUnique({ where: { id } });
+    if (!order) throw new NotFoundException('Order tidak ditemukan');
+    return order;
   }
 }
